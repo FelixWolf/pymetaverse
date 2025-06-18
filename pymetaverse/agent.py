@@ -3,8 +3,9 @@ from .eventtarget import EventTarget
 from . import messages
 import asyncio
 
-class Agent:
+class Agent(EventTarget):
     def __init__(self):
+        super().__init__()
         self.simulator = None
         self.simulators = []
         self.messageTemplate = messages.getDefaultTemplate()
@@ -20,7 +21,16 @@ class Agent:
         if parent:
             self.simulator = sim
         
+        sim.on("message", self.handleMessage)
+        
         return sim
+    
+    def send(self, msg, reliable):
+        if self.simulator:
+            self.simulator.send(msg, reliable)
+    
+    def handleMessage(self, sim, msg):
+        self.fire("message", sim, msg)
     
     @classmethod
     async def fromLogin(cls, login):
@@ -28,18 +38,20 @@ class Agent:
         self.agentId = login["agent_id"]
         self.sessionId = login["session_id"]
         self.secureSessionId = login["secure_session_id"]
+        
         await self.addSimulator((login["sim_ip"], login["sim_port"]), login["circuit_code"], login["seed_capability"], True)
+        
         msg = self.messageTemplate.getMessage("CompleteAgentMovement")
         msg.AgentData.AgentID = self.agentId
         msg.AgentData.SessionID = self.sessionId
         msg.AgentData.CircuitCode = login["circuit_code"]
-        self.simulator.send(msg, True)
+        self.send(msg, True)
+        
         return self
     
     async def run(self):
         while True:
             await asyncio.sleep(5)
             if self.simulator == None:
-                print("Simulator gone! :(")
                 break
         

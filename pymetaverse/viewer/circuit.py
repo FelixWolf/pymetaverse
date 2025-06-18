@@ -1,5 +1,5 @@
 import asyncio
-from .eventtarget import EventTarget
+from ..eventtarget import EventTarget
 from . import packet
 
 class Circuit(asyncio.Protocol, EventTarget):

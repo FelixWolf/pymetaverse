@@ -1,5 +1,5 @@
+from ..eventtarget import EventTarget
 from .simulator import Simulator
-from .eventtarget import EventTarget
 from . import messages
 import asyncio
 

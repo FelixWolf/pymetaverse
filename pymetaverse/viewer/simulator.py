@@ -1,8 +1,8 @@
 from .circuit import Circuit
 from . import messages
-from . import httpclient
-from . import llsd
-from .eventtarget import EventTarget
+from .. import httpclient
+from .. import llsd
+from ..eventtarget import EventTarget
 
 class Simulator(EventTarget):
     def __init__(self, agent):

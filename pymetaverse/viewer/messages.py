@@ -82,8 +82,8 @@ class Block:
     
     # LL couldn't decide which endianness to use. The different endianness
     # is intentional.
-    sVariable1 = struct.Struct(">B")
-    sVariable2 = struct.Struct(">H")
+    sVariable1 = struct.Struct("<B")
+    sVariable2 = struct.Struct("<H")
     sU8 = struct.Struct("<B")
     sU16 = struct.Struct("<H")
     sU32 = struct.Struct("<I")
@@ -221,10 +221,12 @@ class Block:
             
             elif type == self.TYPE.VARIABLE:
                 if size == 1:
-                    data = handle.read(self.sVariable1.unpack(handle.read(self.sVariable1.size))[0])
+                    dataSize, = self.sVariable1.unpack(handle.read(self.sVariable1.size))
+                    data = handle.read(dataSize)
                     
                 elif size == 2:
-                    data = handle.read(self.sVariable2.unpack(handle.read(self.sVariable2.size))[0])
+                    dataSize, = self.sVariable2.unpack(handle.read(self.sVariable2.size))
+                    data = handle.read(dataSize)
                     
                 else:
                     raise Exception("Invalid variable size {}".format(size))

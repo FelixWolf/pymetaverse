@@ -91,8 +91,18 @@ async def Login(username, password,
           isBot = True
     ):
     
+    # Try our hardest to parse whatever we've been previded
+    if type(username) == str:
+        if "." in username:
+            username = username.split(".", 1)
+        elif " " in username:
+            username = username.split(" ", 1)
+        
     if len(username) == 1:
         username = (username[0], "resident")
+    
+    elif len(username) != 2:
+        raise ValueError("Username must be a tuple of firstname and optionally last name")
     
     #WARNING:
     # Falsifying this is a violation of the Terms of Service

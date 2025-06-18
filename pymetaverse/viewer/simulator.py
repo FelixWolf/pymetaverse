@@ -3,6 +3,7 @@ from . import messages
 from .. import httpclient
 from .. import llsd
 from ..eventtarget import EventTarget
+import traceback
 
 class Simulator(EventTarget):
     def __init__(self, agent):
@@ -48,6 +49,7 @@ class Simulator(EventTarget):
             self.name = msg.RegionInfo.SimName.rstrip(b"\0").decode()
             self.owner = msg.RegionInfo.SimOwner
             self.id = msg.RegionInfo2.RegionID
+            
             msg = self.messageTemplate.getMessage("RegionHandshakeReply")
             msg.AgentData.AgentID = self.agent.agentId
             msg.AgentData.SessionID = self.agent.sessionId
@@ -61,7 +63,12 @@ class Simulator(EventTarget):
         
         msg = self.messageTemplate.loadMessage(body)
         self.handleSystemMessages(msg)
-        self.fire("message", self, msg)
+        
+        # Don't break the whole script!
+        try:
+            self.fire("message", self, msg)
+        except Exception as e:
+            traceback.print_exc()
     
     async def fetchCapabilities(self, seed):
         pass

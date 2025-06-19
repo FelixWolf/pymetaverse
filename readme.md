@@ -1,20 +1,36 @@
 # Second Life viewer in python
 ```py
 import asyncio
-import json
+import datetime
 from pymetaverse import login
-from pymetaverse.agent import Agent
+from pymetaverse.bot import SimpleBot
+from pymetaverse.const import *
+
+bot = SimpleBot()
+
+@bot.on("message", name="ChatFromSimulator")
+def ChatFromSimulator(simulator, message):
+    # Ignore start / stop
+    if message.ChatData.ChatType in (4, 5):
+        return
+    
+    sender = message.ChatData.FromName.rstrip(b"\0").decode()
+    text = message.ChatData.Message.rstrip(b"\0").decode()
+    
+    if text == "logout":
+        bot.say(0, "Ok!")
+        bot.logout()
+        
+    print("[{}] {}: {}".format(
+        datetime.datetime.now().strftime("%Y-%M-%d %H:%m:%S"),
+        sender,
+        text
+    ))
 
 async def main():
-    # Set argument isBot = False if human
-    loginHandle = await login.Login(username=("firstname", "lastname"), password="A secret to everyone")
-    
-    agent = await Agent.fromLogin(loginHandle)
-    @agent.on("message")
-    def handleMessage(simulator, message):
-        print(simulator, message)
-    
-    await agent.run()
+    await bot.login(("Magellan", "Linden"), "CrystalPrims")
+    await bot.run()
 
+# Run everything
 asyncio.run(main())
 ```

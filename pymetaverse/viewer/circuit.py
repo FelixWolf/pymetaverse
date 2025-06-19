@@ -32,15 +32,30 @@ class Circuit(asyncio.Protocol, EventTarget):
         if pkt.flags & pkt.FLAGS.ACK:
             self.acknowledge(pkt.acks)
         
-        self.fire("message", addr, pkt.body)
+        asyncio.create_task(self.fire("message", addr, pkt.body))
 
     def error_received(self, exc):
-        self.fire("error", exc)
+        asyncio.create_task(self.fire("error", exc))
 
     def connection_lost(self, exc):
-        self.fire("close", exc)
+        if not self.transport:
+            return
+        
+        self.transport = None
+        asyncio.create_task(self.fire("close", exc))
+    
+    def close(self):
+        if not self.transport:
+            return
+        
+        self.transport.close()
+        self.transport = None
+        asyncio.create_task(self.fire("close", None))
     
     def send(self, message, reliable = False):
+        if not self.transport:
+            return
+        
         pkt = packet.Packet(self.nextSequence(), bytes(message), acks=self.acks)
         if reliable:
             pkt.reliable = True
@@ -49,6 +64,9 @@ class Circuit(asyncio.Protocol, EventTarget):
         self.transport.sendto(pkt.toBytes())
     
     def resend(self, distance = 100):
+        if not self.transport:
+            return
+        
         cutoff = self.sequence - distance
         for pkt in self.unackd.values():
             if pkt.sequence < cutoff:

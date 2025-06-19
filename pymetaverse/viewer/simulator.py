@@ -1,5 +1,6 @@
 from .circuit import Circuit
 from . import messages
+from . import region
 from .. import httpclient
 from .. import llsd
 from ..eventtarget import EventTarget
@@ -32,7 +33,7 @@ class Simulator(EventTarget):
         msg.CircuitCode.ID = self.agent.agentId
         self.send(msg, True)
     
-    def handleSystemMessages(self, msg):
+    async def handleSystemMessages(self, msg):
         if msg.name == "PacketAck":
             acks = []
             for ack in msg.Packets:
@@ -53,20 +54,23 @@ class Simulator(EventTarget):
             msg = self.messageTemplate.getMessage("RegionHandshakeReply")
             msg.AgentData.AgentID = self.agent.agentId
             msg.AgentData.SessionID = self.agent.sessionId
-            msg.RegionInfo.Flags = 2
+            msg.RegionInfo.Flags = 1
             self.send(msg, True)
+        
+        elif msg.name == "DisableSimulator":
+            self.circuit.close()
     
-    def handleMessage(self, addr, body):
+    async def handleMessage(self, addr, body):
         # Reject unknown hosts as a security precaution
         if addr != self.host:
             return
         
         msg = self.messageTemplate.loadMessage(body)
-        self.handleSystemMessages(msg)
+        await self.handleSystemMessages(msg)
         
         # Don't break the whole script!
         try:
-            self.fire("message", self, msg)
+            await self.fire("message", self, msg, name=msg.name)
         except Exception as e:
             traceback.print_exc()
     

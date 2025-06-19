@@ -30,13 +30,26 @@ class Agent(EventTarget):
         if self.simulator:
             self.simulator.send(msg, reliable)
     
-    def handleMessage(self, sim, msg):
-        self.fire("message", sim, msg)
-    
-    @classmethod
-    async def fromLogin(cls, login):
-        self = cls()
+    async def handleSystemMessages(self, sim, msg):
+        if msg.name == "DisableSimulator":
+            if sim == self.simulator:
+                self.simulator = None
+            
+            if sim in self.simulators:
+                self.simulators.remove(sim)
         
+        elif msg.name == "LogoutReply" or msg.name == "KickUser":
+            for simulator in self.simulators:
+                self.simulators.remove(simulator)
+            self.simulator = None
+            await self.fire("logout")
+                
+    
+    async def handleMessage(self, sim, msg):
+        await self.handleSystemMessages(sim, msg)
+        await self.fire("message", sim, msg)
+    
+    async def login(self, login):
         if login["login"] == False:
             raise ValueError("Invalid login handle")
         
@@ -52,12 +65,21 @@ class Agent(EventTarget):
         msg.AgentData.SessionID = self.sessionId
         msg.AgentData.CircuitCode = self.circuitCode
         self.send(msg, True)
-        
-        return self
+    
+    def logout(self):
+        msg = self.messageTemplate.getMessage("LogoutRequest")
+        msg.AgentData.AgentID = self.agentId
+        msg.AgentData.SessionID = self.sessionId
+        self.send(msg, True)
     
     async def run(self):
         while True:
-            await asyncio.sleep(5)
-            if self.simulator == None:
-                break
+            try:
+                await asyncio.sleep(0.1)
+                if self.simulator == None:
+                    break
+            
+            except asyncio.exceptions.CancelledError:
+                # Attempt to gracefully logout
+                self.logout()
         

@@ -1,3 +1,6 @@
+[![License](https://img.shields.io/pypi/l/pymetaverse.svg)](https://pypi.python.org/pypi/pymetaverse/)
+[![PyPI version shields.io](https://img.shields.io/pypi/v/pymetaverse.svg)](https://pypi.python.org/pypi/pymetaverse/)
+
 # Second Life viewer in python
 ```py
 import asyncio
@@ -28,7 +31,7 @@ def ChatFromSimulator(simulator, message):
     ))
 
 async def main():
-    await bot.login(("Magellan", "Linden"), "CrystalPrims")
+    await bot.login(("Example", "Resident"), "password")
     await bot.run()
 
 # Run everything

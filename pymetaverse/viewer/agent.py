@@ -73,11 +73,26 @@ class Agent(EventTarget):
         self.send(msg, True)
     
     async def run(self):
+        lastAck = 0
         while True:
             try:
                 await asyncio.sleep(0.1)
                 if self.simulator == None:
                     break
+                
+                if not "EventQueueGet" in self.simulator.capabilities:
+                    lastAck = 0
+                    continue
+                
+                ack, events = await self.simulator.capabilities["EventQueueGet"].poll(lastAck, False)
+                if ack == None:
+                    lastAck = 0
+                    continue
+
+                if ack == lastAck:
+                    continue
+                
+                lastAck = ack
             
             except asyncio.exceptions.CancelledError:
                 # Attempt to gracefully logout

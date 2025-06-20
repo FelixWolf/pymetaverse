@@ -1,5 +1,7 @@
+import asyncio
 from .circuit import Circuit
 from . import messages
+from .capability import Capabilities
 from . import region
 from .. import httpclient
 from .. import llsd
@@ -16,8 +18,15 @@ class Simulator(EventTarget):
         self.id = None
         self.circuit = None
         self.region = None
-        self.caps = {}
+        self.capabilities = {}
         self.messageTemplate = messages.getDefaultTemplate()
+    
+    def __del__(self):
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(self.close())
+        except RuntimeError:
+            pass
     
     def send(self, msg, reliable = False):
         self.circuit.send(msg, reliable)
@@ -74,8 +83,12 @@ class Simulator(EventTarget):
         except Exception as e:
             traceback.print_exc()
     
-    async def fetchCapabilities(self, seed):
-        pass
+    async def fetchCapabilities(self, url):
+        if "Seed" not in Capabilities:
+            return
+        
+        seed = Capabilities.get("Seed", url)
+        self.capabilities = await seed.getCapabilities(Capabilities)
     
     def __repr__(self):
         return f"<{self.__class__.__name__} \"{self.name}\" ({self.host[0]}:{self.host[1]})>"

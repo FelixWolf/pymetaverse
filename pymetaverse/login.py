@@ -174,5 +174,5 @@ async def Login(username, password,
         async with await session.post(grid, data = requestBody, headers = {
             "Content-Type": "application/llsd+xml"
         }) as response:
-            return llsd.llsdDecode(await response.read())
+            return llsd.llsdDecode(await response.read(), format="xml")
         

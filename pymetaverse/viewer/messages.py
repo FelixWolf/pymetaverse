@@ -123,15 +123,15 @@ class Block:
         return res.getvalue()
     
     def toStream(self, handle):
-        for name, (type, size) in self.parameters.items():
-            if type == self.TYPE.NULL:
+        for name, (dType, size) in self.parameters.items():
+            if dType == self.TYPE.NULL:
                 pass
             
-            elif type == self.TYPE.FIXED:
+            elif dType == self.TYPE.FIXED:
                 data = self.values.get(name, b"")[:size]
                 handle.write(data.ljust(size, b'\x00'))
             
-            elif type == self.TYPE.VARIABLE:
+            elif dType == self.TYPE.VARIABLE:
                 if size == 1:
                     data = self.values.get(name, b"")[:255]
                     handle.write(self.sVariable1.pack(len(data)))
@@ -145,81 +145,84 @@ class Block:
                 else:
                     raise Exception("Invalid variable size {}".format(size))
             
-            elif type == self.TYPE.U8:
+            elif dType == self.TYPE.U8:
                 handle.write(self.sU8.pack(int(self.values.get(name, 0) or 0)))
             
-            elif type == self.TYPE.U16:
+            elif dType == self.TYPE.U16:
                 handle.write(self.sU16.pack(int(self.values.get(name, 0) or 0)))
             
-            elif type == self.TYPE.U32:
+            elif dType == self.TYPE.U32:
                 handle.write(self.sU32.pack(int(self.values.get(name, 0) or 0)))
             
-            elif type == self.TYPE.U64:
+            elif dType == self.TYPE.U64:
                 handle.write(self.sU64.pack(int(self.values.get(name, 0) or 0)))
             
-            elif type == self.TYPE.S8:
+            elif dType == self.TYPE.S8:
                 handle.write(self.sS8.pack(int(self.values.get(name, 0) or 0)))
             
-            elif type == self.TYPE.S16:
+            elif dType == self.TYPE.S16:
                 handle.write(self.sS16.pack(int(self.values.get(name, 0) or 0)))
             
-            elif type == self.TYPE.S32:
+            elif dType == self.TYPE.S32:
                 handle.write(self.sS32.pack(int(self.values.get(name, 0) or 0)))
             
-            elif type == self.TYPE.S64:
+            elif dType == self.TYPE.S64:
                 handle.write(self.sS64.pack(int(self.values.get(name, 0) or 0)))
             
-            elif type == self.TYPE.F32:
+            elif dType == self.TYPE.F32:
                 handle.write(self.sF32.pack(float(self.values.get(name, 0) or 0)))
                 
-            elif type == self.TYPE.F64:
+            elif dType == self.TYPE.F64:
                 handle.write(self.sF64.pack(float(self.values.get(name, 0) or 0)))
             
-            elif type == self.TYPE.LLVECTOR3:
+            elif dType == self.TYPE.LLVECTOR3:
                 vec = self.values.get(name, (0,0,0)) or (0,0,0)
                 handle.write(self.sLLVector3.pack(vec[0], vec[1], vec[2]))
             
-            elif type == self.TYPE.LLVECTOR3D:
+            elif dType == self.TYPE.LLVECTOR3D:
                 vec = self.values.get(name, (0,0,0)) or (0,0,0)
                 handle.write(self.sLLVector3d.pack(vec[0], vec[1], vec[2]))
             
-            elif type == self.TYPE.LLVECTOR4:
+            elif dType == self.TYPE.LLVECTOR4:
                 vec = self.values.get(name, (0,0,0,0)) or (0,0,0,0)
                 handle.write(self.sLLVector4.pack(vec[0], vec[1], vec[2], vec[3]))
             
-            elif type == self.TYPE.LLQUATERNION:
+            elif dType == self.TYPE.LLQUATERNION:
                 vec = self.values.get(name, (0,0,0)) or (0,0,0)
                 # NOTE: Quaternions are transmitted as vectors. The W component
                 # is missing and is just generated on the fly.
                 handle.write(self.sLLVector3.pack(vec[0], vec[1], vec[2]))
             
-            elif type == self.TYPE.LLUUID:
-                handle.write(uuid.UUID(self.values.get(name, "00000000-0000-0000-0000-000000000000") or "00000000-0000-0000-0000-000000000000").bytes)
+            elif dType == self.TYPE.LLUUID:
+                value = self.values.get(name, "00000000-0000-0000-0000-000000000000") or "00000000-0000-0000-0000-000000000000"
+                if type(value) == str:
+                    value = uuid.UUID(value)
+                handle.write(value.bytes)
             
-            elif type == self.TYPE.BOOL:
+            elif dType == self.TYPE.BOOL:
                 handle.write(b"\1" if bool(self.values.get(name, False) or False) else "\0")
             
             # NOTE: IPADDR AND IPPORT USE THE BIG ENDIAN sUInt32 AND sUInt16
             # THESE ARE NOT FROM THE MESSAGE CLASS, THEY ARE FROM THE GLOBAL SCOPE!
             # IT IS INTENTIONAL!
-            elif type == self.TYPE.IPADDR:
+            elif dType == self.TYPE.IPADDR:
                 handle.write(sUInt32.pack(int(ipaddress.IPv4Address(self.values.get(name, "0.0.0.0") or "0.0.0.0"))))
             
-            elif type == self.TYPE.IPPORT:
+            elif dType == self.TYPE.IPPORT:
                 handle.write(sUInt16.pack(int(self.values.get(name, 0) or 0)&0xFFFF))
             
             else:
-                raise Exception("Unknown type {}".format(type))
+                raise Exception("Unknown type {}".format(dType))
     
     def fromStream(self, handle):
-        for name, (type, size) in self.parameters.items():
-            if type == self.TYPE.NULL:
+        for name, (dType, size) in self.parameters.items():
+            if dType == self.TYPE.NULL:
                 pass
             
-            elif type == self.TYPE.FIXED:
+            elif dType == self.TYPE.FIXED:
                 data = handle.read(size)
             
-            elif type == self.TYPE.VARIABLE:
+            elif dType == self.TYPE.VARIABLE:
                 if size == 1:
                     dataSize, = self.sVariable1.unpack(handle.read(self.sVariable1.size))
                     data = handle.read(dataSize)
@@ -231,72 +234,72 @@ class Block:
                 else:
                     raise Exception("Invalid variable size {}".format(size))
             
-            elif type == self.TYPE.U8:
+            elif dType == self.TYPE.U8:
                 data, = self.sU8.unpack(handle.read(self.sU8.size))
             
-            elif type == self.TYPE.U16:
+            elif dType == self.TYPE.U16:
                 data, = self.sU16.unpack(handle.read(self.sU16.size))
             
-            elif type == self.TYPE.U32:
+            elif dType == self.TYPE.U32:
                 data, = self.sU32.unpack(handle.read(self.sU32.size))
             
-            elif type == self.TYPE.U64:
+            elif dType == self.TYPE.U64:
                 data, = self.sU64.unpack(handle.read(self.sU64.size))
             
-            elif type == self.TYPE.S8:
+            elif dType == self.TYPE.S8:
                 data, = self.sS8.unpack(handle.read(self.sS8.size))
             
-            elif type == self.TYPE.S16:
+            elif dType == self.TYPE.S16:
                 data, = self.sS16.unpack(handle.read(self.sS16.size))
             
-            elif type == self.TYPE.S32:
+            elif dType == self.TYPE.S32:
                 data, = self.sS32.unpack(handle.read(self.sS32.size))
             
-            elif type == self.TYPE.S64:
+            elif dType == self.TYPE.S64:
                 data, = self.sS64.unpack(handle.read(self.sS64.size))
             
-            elif type == self.TYPE.F32:
+            elif dType == self.TYPE.F32:
                 data, = self.sF32.unpack(handle.read(self.sF32.size))
                 
-            elif type == self.TYPE.F64:
+            elif dType == self.TYPE.F64:
                 data, = self.sF64.unpack(handle.read(self.sF64.size))
             
-            elif type == self.TYPE.LLVECTOR3:
+            elif dType == self.TYPE.LLVECTOR3:
                 data = self.sLLVector3.unpack(handle.read(self.sLLVector3.size))
             
-            elif type == self.TYPE.LLVECTOR3D:
+            elif dType == self.TYPE.LLVECTOR3D:
                 data = self.sLLVector3D.unpack(handle.read(self.sLLVector3D.size))
             
-            elif type == self.TYPE.LLVECTOR4:
+            elif dType == self.TYPE.LLVECTOR4:
                 data = self.sLLVector4.unpack(handle.read(self.sLLVector4.size))
             
-            elif type == self.TYPE.LLQUATERNION:
+            elif dType == self.TYPE.LLQUATERNION:
                 # NOTE: Quaternions are transmitted as vectors. The W component
                 # is missing and is just generated on the fly.
                 data = self.sLLVector3.unpack(handle.read(self.sLLVector3.size))
             
-            elif type == self.TYPE.LLUUID:
+            elif dType == self.TYPE.LLUUID:
                 data = uuid.UUID(bytes=handle.read(16))
             
-            elif type == self.TYPE.BOOL:
+            elif dType == self.TYPE.BOOL:
                 data = handle.read(1)[0] != 0
             
             # NOTE: IPADDR AND IPPORT USE THE BIG ENDIAN sUInt32 AND sUInt16
             # THESE ARE NOT FROM THE MESSAGE CLASS, THEY ARE FROM THE GLOBAL SCOPE!
             # IT IS INTENTIONAL!
-            elif type == self.TYPE.IPADDR:
+            elif dType == self.TYPE.IPADDR:
                 data = ipaddress.IPv4Address(sUInt32.unpack(handle.read(sUInt32.size)[0]))
             
-            elif type == self.TYPE.IPPORT:
+            elif dType == self.TYPE.IPPORT:
                 data, = sUInt16.unpack(handle.read(sUInt16.size))
             
             else:
-                raise Exception("Unknown type {}".format(type))
+                raise Exception("Unknown type {}".format(dType))
             
             self.values[name] = data
     
-    def registerParameter(self, name, type, size):
-        self.parameters[name] = (type, size)
+    def registerParameter(self, name, dType, size):
+        self.parameters[name] = (dType, size)
     
     def copy(self):
         block = Block(self.name)
@@ -332,7 +335,7 @@ class BlockArray(Block):
             yield self[i]
     
     def toStream(self, handle):
-        if self.count == None:
+        if self.count != None:
             handle.write(sUInt8.pack(self.count))
         
         for i in range(self.count or len(self.blocks)):

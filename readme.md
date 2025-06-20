@@ -1,7 +1,10 @@
 [![License](https://img.shields.io/pypi/l/pymetaverse.svg)](https://pypi.python.org/pypi/pymetaverse/)
 [![PyPI version shields.io](https://img.shields.io/pypi/v/pymetaverse.svg)](https://pypi.python.org/pypi/pymetaverse/)
 
-# Second Life viewer in python
+# PyMetaverse
+A library for connecting to Second Life, OpenSimulator, or other compatible grids.
+
+# Simple bot example
 ```py
 import asyncio
 import datetime
@@ -37,3 +40,8 @@ async def main():
 # Run everything
 asyncio.run(main())
 ```
+
+# Similar Projects
+* Second Life Viewer (C++) - https://github.com/secondlife/viewer
+* LibreMetaverse (C#) - https://github.com/cinderblocks/libremetaverse
+* Node Metaverse (NodeJS) - https://github.com/CasperTech/node-metaverse

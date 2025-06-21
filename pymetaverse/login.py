@@ -2,6 +2,7 @@
 import sys
 import hashlib
 import uuid #For Mac addresses
+import socket #For Host ID
 from . import httpclient
 from . import llsd
 
@@ -88,7 +89,8 @@ async def Login(username, password,
           start = "last",
           options = None,
           grid = "https://login.agni.lindenlab.com/cgi-bin/login.cgi",
-          isBot = True
+          isBot = True,
+          token = ""
     ):
     
     # Try our hardest to parse whatever we've been previded
@@ -142,6 +144,7 @@ async def Login(username, password,
         #"build": 0,
         
         #Machine information
+        "host_id": socket.gethostname(),
         "mac": mac, #WARNING: Falsifying this is a violation of the Terms of Service
         "id0": id0, #WARNING: Falsifying this is a violation of the Terms of Service
         #"viewer_digest": "",
@@ -166,7 +169,7 @@ async def Login(username, password,
         #For proxied connections apparently:
         #"service_proxy_ip": "",
         
-        "token": "",
+        "token": token,
         "mfa_hash": ""
     })
     

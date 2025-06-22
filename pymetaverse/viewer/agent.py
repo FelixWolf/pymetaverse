@@ -2,16 +2,23 @@ from ..eventtarget import EventTarget
 from .simulator import Simulator
 from . import messages
 import asyncio
+import struct
+
+sHandle = struct.Struct("<II")
+sIP = struct.Struct("<BBBB")
 
 class Agent(EventTarget):
     def __init__(self):
         super().__init__()
+        self.agentId = None
+        self.sessionId = None
+        self.secureSessionId = None
+        self.circuitCode = None
         self.simulator = None
         self.simulators = []
         self.messageTemplate = messages.getDefaultTemplate()
-        self.circuitCode = None
     
-    async def addSimulator(self, host, circuit, caps = None, parent = False):
+    async def addSimulator(self, handle, host, circuit, caps = None, parent = False):
         sim = Simulator(self)
         await sim.connect(host, circuit)
         self.simulators.append(sim)
@@ -23,15 +30,17 @@ class Agent(EventTarget):
             self.simulator = sim
         
         sim.on("message", self.handleMessage)
-        
+        sim.on("event", self.handleEvent)
+        print("Connecting to", sim)
         return sim
     
     def send(self, msg, reliable):
         if self.simulator:
             self.simulator.send(msg, reliable)
     
-    async def handleSystemMessages(self, sim, msg):
+    async def handleMessage(self, sim, msg):
         if msg.name == "DisableSimulator":
+            sim.close()
             if sim == self.simulator:
                 self.simulator = None
             
@@ -40,14 +49,69 @@ class Agent(EventTarget):
         
         elif msg.name == "LogoutReply" or msg.name == "KickUser":
             for simulator in self.simulators:
+                simulator.close()
                 self.simulators.remove(simulator)
             self.simulator = None
             await self.fire("logout")
-                
-    
-    async def handleMessage(self, sim, msg):
-        await self.handleSystemMessages(sim, msg)
+        
         await self.fire("message", sim, msg)
+    
+    async def handleEvent(self, sim, name, body):
+        print(sim, name, body)
+        if name == "EnableSimulator":
+            simulatorInfo = body["SimulatorInfo"][0]
+            handle = struct.unpack("<II", simulatorInfo["Handle"])
+            host = "{}.{}.{}.{}".format(*sIP.unpack(simulatorInfo["IP"]))
+            await self.addSimulator(
+                handle,
+                (host, simulatorInfo["Port"]),
+                self.circuitCode
+            )
+        
+        elif name == "TeleportFinish":
+            info = body["Info"][0]
+            handle = struct.unpack("<II", info["RegionHandle"])
+            host = "{}.{}.{}.{}".format(*sIP.unpack(info["SimIP"]))
+            await self.addSimulator(
+                handle,
+                (host, info["SimPort"]),
+                self.circuitCode,
+                info["SeedCapability"],
+                True
+            )
+            msg = self.messageTemplate.getMessage("CompleteAgentMovement")
+            msg.AgentData.AgentID = self.agentId
+            msg.AgentData.SessionID = self.sessionId
+            msg.AgentData.CircuitCode = self.circuitCode
+            self.send(msg, True)
+        
+        elif name == "CrossedRegion":
+            CrossedRegion = body["CrossedRegion"][0]
+            handle = struct.unpack("<II", CrossedRegion["RegionData"][0]["RegionHandle"])
+            host = "{}.{}.{}.{}".format(*sIP.unpack(CrossedRegion["RegionData"][0]["SimIP"]))
+            await self.addSimulator(
+                handle,
+                (host, CrossedRegion["RegionData"][0]["SimPort"]),
+                self.circuitCode,
+                CrossedRegion["RegionData"][0]["SeedCapability"],
+                True
+            )
+            msg = self.messageTemplate.getMessage("CompleteAgentMovement")
+            msg.AgentData.AgentID = self.agentId
+            msg.AgentData.SessionID = self.sessionId
+            msg.AgentData.CircuitCode = self.circuitCode
+            self.send(msg, True)
+        
+        elif name == "EstablishAgentCommunication":
+            host = body["sim-ip-and-port"].split(":", 1)
+            host = (host[0], int(host[1]))
+
+            for simulator in self.simulators:
+                if simulator.host == host:
+                    await simulator.fetchCapabilities(body["seed-capability"])
+                    break
+        
+        await self.fire("event", sim, name, body)
     
     async def login(self, login):
         if login["login"] == False:
@@ -58,7 +122,13 @@ class Agent(EventTarget):
         self.secureSessionId = login["secure_session_id"]
         self.circuitCode = login["circuit_code"]
         
-        await self.addSimulator((login["sim_ip"], login["sim_port"]), self.circuitCode, login["seed_capability"], True)
+        await self.addSimulator(
+            (login["region_x"], login["region_y"]),
+            (login["sim_ip"], login["sim_port"]),
+            self.circuitCode,
+            login["seed_capability"],
+            True
+        )
         
         msg = self.messageTemplate.getMessage("CompleteAgentMovement")
         msg.AgentData.AgentID = self.agentId
@@ -73,26 +143,12 @@ class Agent(EventTarget):
         self.send(msg, True)
     
     async def run(self):
-        lastAck = 0
         while True:
             try:
-                await asyncio.sleep(0.1)
-                if self.simulator == None:
+                if not self.simulator:
                     break
                 
-                if not "EventQueueGet" in self.simulator.capabilities:
-                    lastAck = 0
-                    continue
-                
-                ack, events = await self.simulator.capabilities["EventQueueGet"].poll(lastAck, False)
-                if ack == None:
-                    lastAck = 0
-                    continue
-
-                if ack == lastAck:
-                    continue
-                
-                lastAck = ack
+                await asyncio.sleep(0.1)
             
             except asyncio.exceptions.CancelledError:
                 # Attempt to gracefully logout

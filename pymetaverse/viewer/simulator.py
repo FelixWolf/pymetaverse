@@ -5,6 +5,7 @@ from .capability import Capabilities
 from . import region
 from .. import httpclient
 from .. import llsd
+from . import eventqueue
 from ..eventtarget import EventTarget
 import traceback
 
@@ -19,6 +20,8 @@ class Simulator(EventTarget):
         self.circuit = None
         self.region = None
         self.capabilities = {}
+        self.eventQueue = eventqueue.EventQueue(self)
+        self.eventQueue.on("event", self.handleEvent)
         self.messageTemplate = messages.getDefaultTemplate()
     
     def __del__(self):
@@ -67,7 +70,7 @@ class Simulator(EventTarget):
             self.send(msg, True)
         
         elif msg.name == "DisableSimulator":
-            self.circuit.close()
+            self.close()
     
     async def handleMessage(self, addr, body):
         # Reject unknown hosts as a security precaution
@@ -83,13 +86,24 @@ class Simulator(EventTarget):
         except Exception as e:
             traceback.print_exc()
     
-    async def fetchCapabilities(self, url):
+    async def handleEvent(self, name, body):
+        try:
+            await self.fire("event", self, name, body)
+        except Exception as e:
+            traceback.print_exc()
+
+    async def fetchCapabilities(self, url = None):
         if "Seed" not in Capabilities:
             return
         
         seed = Capabilities.get("Seed", url)
         self.capabilities = await seed.getCapabilities(Capabilities)
-    
+        self.eventQueue.start()
+
+    def close(self):
+        self.eventQueue.close()
+        self.circuit.close()
+
     def __repr__(self):
         return f"<{self.__class__.__name__} \"{self.name}\" ({self.host[0]}:{self.host[1]})>"
     

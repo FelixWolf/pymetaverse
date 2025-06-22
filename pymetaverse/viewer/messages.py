@@ -288,7 +288,7 @@ class Block:
             # THESE ARE NOT FROM THE MESSAGE CLASS, THEY ARE FROM THE GLOBAL SCOPE!
             # IT IS INTENTIONAL!
             elif dType == self.TYPE.IPADDR:
-                data = ipaddress.IPv4Address(sUInt32.unpack(handle.read(sUInt32.size)[0]))
+                data = ipaddress.IPv4Address(sUInt32.unpack(handle.read(sUInt32.size))[0])
             
             elif dType == self.TYPE.IPPORT:
                 data, = sUInt16.unpack(handle.read(sUInt16.size))

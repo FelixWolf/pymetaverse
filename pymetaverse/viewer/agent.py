@@ -1,8 +1,12 @@
+import asyncio
+import struct
+
 from ..eventtarget import EventTarget
 from .simulator import Simulator
 from . import messages
-import asyncio
-import struct
+
+import logging
+logger = logging.getLogger(__name__)
 
 sHandle = struct.Struct("<II")
 sIP = struct.Struct("<BBBB")
@@ -19,6 +23,7 @@ class Agent(EventTarget):
         self.messageTemplate = messages.getDefaultTemplate()
     
     async def addSimulator(self, handle, host, circuit, caps = None, parent = False):
+        logger.debug(f"Connecting to {host} with circuit {circuit}")
         sim = Simulator(self)
         await sim.connect(host, circuit)
         self.simulators.append(sim)
@@ -31,7 +36,6 @@ class Agent(EventTarget):
         
         sim.on("message", self.handleMessage)
         sim.on("event", self.handleEvent)
-        print("Connecting to", sim)
         return sim
     
     def send(self, msg, reliable):
@@ -57,7 +61,6 @@ class Agent(EventTarget):
         await self.fire("message", sim, msg)
     
     async def handleEvent(self, sim, name, body):
-        print(sim, name, body)
         if name == "EnableSimulator":
             simulatorInfo = body["SimulatorInfo"][0]
             handle = struct.unpack("<II", simulatorInfo["Handle"])
@@ -110,6 +113,9 @@ class Agent(EventTarget):
                 if simulator.host == host:
                     await simulator.fetchCapabilities(body["seed-capability"])
                     break
+            
+            else:
+                logger.warning(f"Received EstablishAgentCommunication for unknown host {host}")
         
         await self.fire("event", sim, name, body)
     
@@ -147,7 +153,7 @@ class Agent(EventTarget):
             try:
                 if not self.simulator:
                     break
-                
+
                 await asyncio.sleep(0.1)
             
             except asyncio.exceptions.CancelledError:

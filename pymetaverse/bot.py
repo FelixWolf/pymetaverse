@@ -7,6 +7,9 @@ from . import login
 from . import viewer as Viewer
 from .const import *
 
+import logging
+logger = logging.getLogger(__name__)
+
 class SimpleBot(EventTarget):
     def __init__(self):
         super().__init__()
@@ -75,7 +78,10 @@ class SimpleBot(EventTarget):
     async def login(self, username, password):
         loginHandle = await login.Login(username, password, isBot = True)
         if loginHandle["login"] == False:
+            logger.critical(f"Login failure: {loginHandle["message"]}")
             raise ValueError("Incorrect username or password")
+        
+        logger.info(f"Login success: {loginHandle["message"]}")
         
         await self.agent.login(loginHandle)
     

@@ -6,6 +6,9 @@ import socket #For Host ID
 from . import httpclient
 from . import llsd
 
+import logging
+logger = logging.getLogger(__name__)
+
 def getMacAddress():
     mac = uuid.getnode()
     return ':'.join(("%012X" % mac)[i:i+2] for i in range(0, 12, 2))
@@ -60,6 +63,9 @@ OPTIONS_FULL = [
     "inventory-skel-lib",
     "inventory-meat-lib",
 
+    "wearables",
+    "attachments",
+
     "initial-outfit",
     "gestures",
     "display_names",
@@ -70,6 +76,8 @@ OPTIONS_FULL = [
     "buddy-list",
     "newuser-config",
     "ui-config",
+
+    "landmarks",
 
     "advanced-mode",
     
@@ -83,8 +91,6 @@ OPTIONS_FULL = [
     #"god-connect", #lol no
 ]
 
-#WARNING: Not actually async yet! But make it a async request to allow it to be
-#done so in the future!
 async def Login(username, password,
           start = "last",
           options = None,
@@ -124,11 +130,15 @@ async def Login(username, password,
     if options == None:
         options = OPTIONS_MOST
     
+    # Hash the password if it isn't hashed
+    if not password.startswith("$1$"):
+        password = "$1$" + hashlib.md5(password.encode("latin")).hexdigest()
+
     requestBody = llsd.llsdEncode({
         #Credentials
         "first": username[0],
         "last": username[1],
-        "passwd": "$1$" + hashlib.md5(password.encode("latin")).hexdigest(),
+        "passwd": password,
         #"web_login_key": "",
         
         #OS information
@@ -142,12 +152,12 @@ async def Login(username, password,
         #"minor": 0,
         #"patch": 0,
         #"build": 0,
+        #"viewer_digest": "",
         
         #Machine information
         "host_id": socket.gethostname(),
         "mac": mac, #WARNING: Falsifying this is a violation of the Terms of Service
         "id0": id0, #WARNING: Falsifying this is a violation of the Terms of Service
-        #"viewer_digest": "",
         
         #Ignore messages for now
         "skipoptional": True,
@@ -177,5 +187,10 @@ async def Login(username, password,
         async with await session.post(grid, data = requestBody, headers = {
             "Content-Type": "application/llsd+xml"
         }) as response:
-            return llsd.llsdDecode(await response.read(), format="xml")
+            resp = await response.read()
+            # Log the pre-parsed result, just in case the server returns something funky
+            logger.debug(f"Received login reply: {resp}")
+            with open("/tmp/login.xml", "wb") as f:
+                f.write(resp)
+            return llsd.llsdDecode(resp, format="xml")
         

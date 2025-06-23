@@ -38,24 +38,26 @@ class Agent(EventTarget):
         sim.on("event", self.handleEvent)
         return sim
     
+    def removeSimulator(self, simulator):
+        logger.debug(f"Removing simulator {simulator.name} with address {simulator.host}")
+        if simulator == self.simulator:
+            self.simulator = None
+        
+        if simulator in self.simulators:
+            self.simulators.remove(simulator)
+        
+        simulator.close()
+
     def send(self, msg, reliable):
         if self.simulator:
             self.simulator.send(msg, reliable)
     
     async def handleMessage(self, sim, msg):
         if msg.name == "DisableSimulator":
-            sim.close()
-            if sim == self.simulator:
-                self.simulator = None
-            
-            if sim in self.simulators:
-                self.simulators.remove(sim)
+            self.removeSimulator(sim)
         
         elif msg.name == "LogoutReply" or msg.name == "KickUser":
-            for simulator in self.simulators:
-                simulator.close()
-                self.simulators.remove(simulator)
-            self.simulator = None
+            self.removeSimulator(sim)
             await self.fire("logout")
         
         await self.fire("message", sim, msg)
@@ -120,7 +122,7 @@ class Agent(EventTarget):
         await self.fire("event", sim, name, body)
     
     async def login(self, login):
-        if login["login"] == False:
+        if login["login"] == "false":
             raise ValueError("Invalid login handle")
         
         self.agentId = login["agent_id"]
@@ -143,6 +145,7 @@ class Agent(EventTarget):
         self.send(msg, True)
     
     def logout(self):
+        logger.info(f"Logging out")
         msg = self.messageTemplate.getMessage("LogoutRequest")
         msg.AgentData.AgentID = self.agentId
         msg.AgentData.SessionID = self.sessionId

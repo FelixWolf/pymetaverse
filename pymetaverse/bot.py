@@ -77,7 +77,7 @@ class SimpleBot(EventTarget):
     
     async def login(self, username, password):
         loginHandle = await login.Login(username, password, isBot = True)
-        if loginHandle["login"] == False:
+        if loginHandle["login"] == "false":
             logger.critical(f"Login failure: {loginHandle["message"]}")
             raise ValueError("Incorrect username or password")
         

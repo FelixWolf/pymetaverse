@@ -26,8 +26,7 @@ class Simulator(EventTarget):
     
     def __del__(self):
         try:
-            loop = asyncio.get_running_loop()
-            loop.create_task(self.close())
+            self.close()
         except RuntimeError:
             pass
     

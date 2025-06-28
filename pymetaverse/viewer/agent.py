@@ -14,6 +14,7 @@ sIP = struct.Struct("<BBBB")
 class Agent(EventTarget):
     def __init__(self):
         super().__init__()
+        self.username = (None, None)
         self.agentId = None
         self.sessionId = None
         self.secureSessionId = None
@@ -125,6 +126,7 @@ class Agent(EventTarget):
         if login["login"] == "false":
             raise ValueError("Invalid login handle")
         
+        self.username = (login["first_name"], login["last_name"])
         self.agentId = login["agent_id"]
         self.sessionId = login["session_id"]
         self.secureSessionId = login["secure_session_id"]
@@ -159,7 +161,8 @@ class Agent(EventTarget):
 
                 await asyncio.sleep(0.1)
             
-            except asyncio.exceptions.CancelledError:
+            except asyncio.exceptions.CancelledError as e:
                 # Attempt to gracefully logout
                 self.logout()
+                raise e
         

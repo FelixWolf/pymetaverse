@@ -200,7 +200,7 @@ class Block:
                 handle.write(value.bytes)
             
             elif dType == self.TYPE.BOOL:
-                handle.write(b"\1" if bool(self.values.get(name, False) or False) else "\0")
+                handle.write(b"\1" if bool(self.values.get(name, False) or False) else b"\0")
             
             # NOTE: IPADDR AND IPPORT USE THE BIG ENDIAN sUInt32 AND sUInt16
             # THESE ARE NOT FROM THE MESSAGE CLASS, THEY ARE FROM THE GLOBAL SCOPE!

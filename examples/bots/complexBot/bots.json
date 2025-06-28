@@ -1,0 +1,9 @@
+[
+    {
+        "username": ["bot", "example"],
+        "password": "super secret",
+        "functions": [
+            "defaultFuncs:logChat"
+        ]
+    }
+]

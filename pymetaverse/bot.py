@@ -57,6 +57,8 @@ class SimpleBot(EventTarget):
             msg.HeightWidthBlock.Width = 0xffff
             self.send(msg)
             
+            self.agentUpdate()
+            
     
     @property
     def simulator(self):
@@ -67,7 +69,6 @@ class SimpleBot(EventTarget):
         return self.agent.messageTemplate
     
     async def handleMessage(self, simulator, message):
-        self.agentUpdate()
         await self.handleSystemMessages(simulator, message)
         await self.fire("message", simulator, message, name=message.name)
     

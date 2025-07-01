@@ -139,7 +139,7 @@ class Simulator(EventTarget):
         try:
             await asyncio.wait_for(future, timeout=timeout)
         except asyncio.TimeoutError:
-            del self.pendingPings.pop[msg.PingID.PingID]
+            del self.pendingPings[msg.PingID.PingID]
             return False
         
         return True

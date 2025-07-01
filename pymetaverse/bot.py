@@ -56,7 +56,7 @@ class SimpleBot(EventTarget):
             msg.HeightWidthBlock.Height = 0xffff
             msg.HeightWidthBlock.Width = 0xffff
             self.send(msg)
-            
+
             self.agentUpdate()
             
     
@@ -76,8 +76,8 @@ class SimpleBot(EventTarget):
         self.agent.send(message, reliable)
     
     
-    async def login(self, username, password):
-        loginHandle = await login.Login(username, password, isBot = True)
+    async def login(self, *args, **kwargs):
+        loginHandle = await login.Login(*args, **kwargs, isBot = True)
         if loginHandle["login"] == "false":
             logger.critical(f"Login failure: {loginHandle["message"]}")
             raise ValueError("Incorrect username or password")

@@ -156,6 +156,11 @@ class Agent(EventTarget):
     async def run(self):
         while True:
             try:
+                # Remove simulators if they fail ping check
+                for simulator in self.simulators:
+                    if not await simulator.ping():
+                        self.removeSimulator(simulator)
+                
                 if not self.simulator:
                     break
 

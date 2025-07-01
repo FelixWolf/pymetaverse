@@ -7,6 +7,7 @@ from .. import httpclient
 from .. import llsd
 from . import eventqueue
 from ..eventtarget import EventTarget
+import time
 import traceback
 
 class Simulator(EventTarget):
@@ -19,7 +20,10 @@ class Simulator(EventTarget):
         self.id = None
         self.circuit = None
         self.region = None
+        self.lastMessage = time.time()
         self.capabilities = {}
+        self.pingSequence = 0
+        self.pendingPings = {}
         self.eventQueue = eventqueue.EventQueue(self)
         self.eventQueue.on("event", self.handleEvent)
         self.messageTemplate = messages.getDefaultTemplate()
@@ -45,6 +49,7 @@ class Simulator(EventTarget):
         self.send(msg, True)
     
     async def handleSystemMessages(self, msg):
+        self.lastMessage = time.time()
         if msg.name == "PacketAck":
             acks = []
             for ack in msg.Packets:
@@ -56,6 +61,13 @@ class Simulator(EventTarget):
             msg = self.messageTemplate.getMessage("CompletePingCheck")
             msg.PingID.PingID = msg.PingID.PingID
             self.send(msg)
+        
+        elif msg.name == "CompletePingCheck":
+            if msg.PingID.PingID in self.pendingPings:
+                future = self.pendingPings[msg.PingID.PingID]
+                if not future.done():
+                    future.set_result(False)
+                del self.pendingPings[msg.PingID.PingID]
         
         elif msg.name == "RegionHandshake":
             self.name = msg.RegionInfo.SimName.rstrip(b"\0").decode()
@@ -98,6 +110,39 @@ class Simulator(EventTarget):
         seed = Capabilities.get("Seed", url)
         self.capabilities = await seed.getCapabilities(Capabilities)
         self.eventQueue.start()
+
+    async def ping(self, timeout = 5.0, forceUsePingCheck = False):
+        # If we already have a message within the timeout range,
+        # just use that instead. Unless specified otherwise.
+        if not forceUsePingCheck and self.lastMessage + timeout > time.time():
+            return True
+        
+        loop = asyncio.get_running_loop()
+        future = loop.create_future()
+
+        # If it exists at this point, it's probably not ever going to
+        # come in
+        if self.pingSequence in self.pendingPings:
+            old_future = self.pendingPings[self.pingSequence]
+            if not old_future.done():
+                old_future.set_result(False)
+            del self.pendingPings[self.pingSequence]
+        
+        msg = self.messageTemplate.getMessage("StartPingCheck")
+        msg.PingID.PingID = self.pingSequence
+
+        self.pendingPings[msg.PingID.PingID] = future
+        self.pingSequence = (self.pingSequence + 1) & 0xFF
+
+        self.send(msg)
+
+        try:
+            await asyncio.wait_for(future, timeout=timeout)
+        except asyncio.TimeoutError:
+            del self.pendingPings.pop[msg.PingID.PingID]
+            return False
+        
+        return True
 
     def close(self):
         self.eventQueue.close()

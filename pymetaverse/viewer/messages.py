@@ -709,28 +709,27 @@ def getDefaultTemplate():
     global __templateCache
     if not __templateCache:
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        template_path = os.path.join(script_dir, "message_template.msg")
+        template_path = os.path.join(script_dir, "message_template/message_template.msg")
         with open(template_path, "r") as f:
             __templateCache = MessageTemplate.load(f)
     return __templateCache
 
 def unitTest():
-    with open("message_template.msg", "r") as f:
-        template = MessageTemplate.load(f)
-        msg = template.getMessage("TestMessage")
-        msg.TestBlock1.Test1 = 4
-        
-        for i in range(0, 4):
-            msg.NeighborBlock[i].Test0 = i * 3
-            msg.NeighborBlock[i].Test1 = i * 3 + 1
-            msg.NeighborBlock[i].Test2 = i * 3 + 2
-        print(msg)
-        print(ZeroEncode(bytes(msg)))
-        print(ZeroDecode(ZeroEncode(bytes(msg))))
-        print(bytes(msg) == ZeroDecode(ZeroEncode(bytes(msg))))
-        msg2 = template.getMessage("TestMessage")
-        msg2.loads(bytes(msg))
-        print(msg2.TestBlock1.Test1)
+    template = getDefaultTemplate()
+    msg = template.getMessage("TestMessage")
+    msg.TestBlock1.Test1 = 4
+    
+    for i in range(0, 4):
+        msg.NeighborBlock[i].Test0 = i * 3
+        msg.NeighborBlock[i].Test1 = i * 3 + 1
+        msg.NeighborBlock[i].Test2 = i * 3 + 2
+    print(msg)
+    print(ZeroEncode(bytes(msg)))
+    print(ZeroDecode(ZeroEncode(bytes(msg))))
+    print(bytes(msg) == ZeroDecode(ZeroEncode(bytes(msg))))
+    msg2 = template.getMessage("TestMessage")
+    msg2.loads(bytes(msg))
+    print(msg2.TestBlock1.Test1)
 
 
 if __name__ == "__main__":

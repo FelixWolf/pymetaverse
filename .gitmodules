@@ -1,0 +1,3 @@
+[submodule "pymetaverse/viewer/message_template"]
+	path = pymetaverse/viewer/message_template
+	url = https://github.com/secondlife/master-message-template.git

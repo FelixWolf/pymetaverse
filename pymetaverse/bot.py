@@ -79,10 +79,10 @@ class SimpleBot(EventTarget):
     async def login(self, *args, **kwargs):
         loginHandle = await login.Login(*args, **kwargs, isBot = True)
         if loginHandle["login"] == "false":
-            logger.critical(f"Login failure: {loginHandle["message"]}")
+            logger.critical("Login failure: {}".format(loginHandle["message"]))
             raise ValueError("Incorrect username or password")
         
-        logger.info(f"Login success: {loginHandle["message"]}")
+        logger.info("Login success: {}".format(loginHandle["message"]))
         
         await self.agent.login(loginHandle)
     

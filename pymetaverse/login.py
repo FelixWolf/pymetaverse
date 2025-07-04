@@ -190,7 +190,5 @@ async def Login(username, password,
             resp = await response.read()
             # Log the pre-parsed result, just in case the server returns something funky
             logger.debug(f"Received login reply: {resp}")
-            with open("/tmp/login.xml", "wb") as f:
-                f.write(resp)
             return llsd.llsdDecode(resp, format="xml")
         

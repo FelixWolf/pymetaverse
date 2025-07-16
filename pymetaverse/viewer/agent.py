@@ -57,8 +57,13 @@ class Agent(EventTarget):
         if msg.name == "DisableSimulator":
             self.removeSimulator(sim)
         
-        elif msg.name == "LogoutReply" or msg.name == "KickUser":
+        elif msg.name == "LogoutReply":
             self.removeSimulator(sim)
+            await self.fire("logout")
+        
+        elif msg.name == "KickUser":
+            self.removeSimulator(sim)
+            await self.fire("kicked")
             await self.fire("logout")
         
         await self.fire("message", sim, msg)

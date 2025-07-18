@@ -55,13 +55,16 @@ class Agent(EventTarget):
     
     async def handleMessage(self, sim, msg):
         if msg.name == "DisableSimulator":
+            logger.debug(f"Disabling simulator {sim}")
             self.removeSimulator(sim)
         
         elif msg.name == "LogoutReply":
+            logger.debug(f"LogoutReply from {sim}")
             self.removeSimulator(sim)
             await self.fire("logout")
         
         elif msg.name == "KickUser":
+            logger.debug(f"KickUser from {sim}")
             self.removeSimulator(sim)
             await self.fire("kicked")
             await self.fire("logout")
@@ -69,6 +72,7 @@ class Agent(EventTarget):
         await self.fire("message", sim, msg)
     
     async def handleEvent(self, sim, name, body):
+        logger.debug(f"EventQueue \"{name}\" from {sim}")
         if name == "EnableSimulator":
             simulatorInfo = body["SimulatorInfo"][0]
             handle = struct.unpack("<II", simulatorInfo["Handle"])

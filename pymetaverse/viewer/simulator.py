@@ -10,6 +10,9 @@ from ..eventtarget import EventTarget
 import time
 import traceback
 
+import logging
+logger = logging.getLogger(__name__)
+
 class Simulator(EventTarget):
     def __init__(self, agent):
         super().__init__()
@@ -70,6 +73,7 @@ class Simulator(EventTarget):
                 del self.pendingPings[msg.PingID.PingID]
         
         elif msg.name == "RegionHandshake":
+            logger.debug(f"Received handshake for {self}")
             self.name = msg.RegionInfo.SimName.rstrip(b"\0").decode()
             self.owner = msg.RegionInfo.SimOwner
             self.id = msg.RegionInfo2.RegionID
@@ -117,6 +121,8 @@ class Simulator(EventTarget):
         if not forceUsePingCheck and self.lastMessage + timeout > time.time():
             return True
         
+        logger.debug(f"Starting ping check for {self}")
+
         loop = asyncio.get_running_loop()
         future = loop.create_future()
 

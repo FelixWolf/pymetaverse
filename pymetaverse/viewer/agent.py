@@ -33,6 +33,7 @@ class Agent(EventTarget):
             await sim.fetchCapabilities(caps)
         
         if parent:
+            logger.debug(f"Setting parent simulator to {sim}")
             self.simulator = sim
         
         sim.on("message", self.handleMessage)
@@ -42,6 +43,7 @@ class Agent(EventTarget):
     def removeSimulator(self, simulator):
         logger.debug(f"Removing simulator {simulator.name} with address {simulator.host}")
         if simulator == self.simulator:
+            logger.debug(f"Parent simulator {simulator} removed!")
             self.simulator = None
         
         if simulator in self.simulators:

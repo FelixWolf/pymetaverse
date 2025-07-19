@@ -52,7 +52,6 @@ class Simulator(EventTarget):
         self.send(msg, True)
     
     async def handleSystemMessages(self, msg):
-        self.lastMessage = time.time()
         if msg.name == "PacketAck":
             acks = []
             for ack in msg.Packets:
@@ -73,10 +72,10 @@ class Simulator(EventTarget):
                 del self.pendingPings[msg.PingID.PingID]
         
         elif msg.name == "RegionHandshake":
-            logger.debug(f"Received handshake for {self}")
             self.name = msg.RegionInfo.SimName.rstrip(b"\0").decode()
             self.owner = msg.RegionInfo.SimOwner
             self.id = msg.RegionInfo2.RegionID
+            logger.debug(f"Received handshake for {self}")
             
             msg = self.messageTemplate.getMessage("RegionHandshakeReply")
             msg.AgentData.AgentID = self.agent.agentId
@@ -92,6 +91,7 @@ class Simulator(EventTarget):
         if addr != self.host:
             return
         
+        self.lastMessage = time.time()
         msg = self.messageTemplate.loadMessage(body)
         await self.handleSystemMessages(msg)
         
@@ -126,26 +126,29 @@ class Simulator(EventTarget):
         loop = asyncio.get_running_loop()
         future = loop.create_future()
 
+        currentPing = self.pingSequence
+        self.pingSequence = (currentPing + 1) & 0xFF
+
         # If it exists at this point, it's probably not ever going to
         # come in
-        if self.pingSequence in self.pendingPings:
-            old_future = self.pendingPings[self.pingSequence]
+        if currentPing in self.pendingPings:
+            old_future = self.pendingPings[currentPing]
             if not old_future.done():
                 old_future.set_result(False)
-            del self.pendingPings[self.pingSequence]
+            del self.pendingPings[currentPing]
         
         msg = self.messageTemplate.getMessage("StartPingCheck")
-        msg.PingID.PingID = self.pingSequence
+        msg.PingID.PingID = currentPing
 
         self.pendingPings[msg.PingID.PingID] = future
-        self.pingSequence = (self.pingSequence + 1) & 0xFF
 
         self.send(msg)
 
         try:
             await asyncio.wait_for(future, timeout=timeout)
         except asyncio.TimeoutError:
-            del self.pendingPings[msg.PingID.PingID]
+            if msg.PingID.PingID in self.pendingPings:
+                del self.pendingPings[msg.PingID.PingID]
             return False
         
         return True

@@ -14,10 +14,10 @@ import uuid
 import re
 import importlib
 from aiohttp import web
-from pymetaverse import login
-from pymetaverse.bot import SimpleBot
-from pymetaverse.viewer import messages
-from pymetaverse.const import *
+from metaverse import login
+from metaverse.bot import SimpleBot
+from metaverse.viewer import messages
+from metaverse.const import *
 
 def loadDictIntoMessage(msg, data):
     for name, block in data.items():

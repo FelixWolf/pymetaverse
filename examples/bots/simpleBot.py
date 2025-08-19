@@ -1,8 +1,8 @@
 import asyncio
 import datetime
-from pymetaverse import login
-from pymetaverse.bot import SimpleBot
-from pymetaverse.const import *
+from metaverse import login
+from metaverse.bot import SimpleBot
+from metaverse.const import *
 
 bot = SimpleBot()
 

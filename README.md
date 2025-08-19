@@ -1,5 +1,5 @@
-[![License](https://img.shields.io/pypi/l/pymetaverse.svg)](https://pypi.python.org/pypi/pymetaverse/)
-[![PyPI version shields.io](https://img.shields.io/pypi/v/pymetaverse.svg)](https://pypi.python.org/pypi/pymetaverse/)
+[![License](https://img.shields.io/pypi/l/metaverse.svg)](https://pypi.python.org/pypi/metaverse/)
+[![PyPI version shields.io](https://img.shields.io/pypi/v/metaverse.svg)](https://pypi.python.org/pypi/metaverse/)
 
 # PyMetaverse
 A library for connecting to Second Life, OpenSimulator, or other compatible grids.
@@ -8,9 +8,9 @@ A library for connecting to Second Life, OpenSimulator, or other compatible grid
 ```py
 import asyncio
 import datetime
-from pymetaverse import login
-from pymetaverse.bot import SimpleBot
-from pymetaverse.const import *
+from metaverse import login
+from metaverse.bot import SimpleBot
+from metaverse.const import *
 
 bot = SimpleBot()
 

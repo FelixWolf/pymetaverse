@@ -59,7 +59,6 @@ class SimpleBot(EventTarget):
 
             self.agentUpdate()
             
-    
     @property
     def simulator(self):
         return self.agent.simulator
@@ -74,7 +73,6 @@ class SimpleBot(EventTarget):
     
     def send(self, message, reliable = False):
         self.agent.send(message, reliable)
-    
     
     async def login(self, *args, **kwargs):
         loginHandle = await login.Login(*args, **kwargs, isBot = True)

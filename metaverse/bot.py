@@ -77,7 +77,6 @@ class SimpleBot(EventTarget):
         if name == "ChatterBoxInvitation":
             if "instantmessage" in body:
                 im = body["instantmessage"]["message_params"]
-                print("Accepting ChatterBoxInvitation from payload", body)
                 await sim.capabilities["ChatSessionRequest"].acceptInvitation(im["id"])
                 await self.fire("InstantMessage",
                     im["id"],

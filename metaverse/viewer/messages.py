@@ -335,8 +335,8 @@ class BlockArray(Block):
             yield self[i]
     
     def toStream(self, handle):
-        if self.count != None:
-            handle.write(sUInt8.pack(self.count))
+        if self.count == None:
+            handle.write(sUInt8.pack(len(self)))
         
         for i in range(self.count or len(self.blocks)):
             self[i].toStream(handle)

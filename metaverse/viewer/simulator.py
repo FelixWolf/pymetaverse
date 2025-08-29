@@ -28,7 +28,7 @@ class Simulator(EventTarget):
         self.pingSequence = 0
         self.pendingPings = {}
         self.eventQueue = eventqueue.EventQueue(self)
-        self.eventQueue.on("event", self.handleEvent)
+        self.eventQueue.on("Event", self.handleEvent)
         self.messageTemplate = messages.getDefaultTemplate()
     
     def __del__(self):
@@ -43,7 +43,7 @@ class Simulator(EventTarget):
     async def connect(self, host, circuitCode):
         self.host = host
         self.circuit = await Circuit.create(host)
-        self.circuit.on("message", self.handleMessage)
+        self.circuit.on("Message", self.handleMessage)
         
         msg = self.messageTemplate.getMessage("UseCircuitCode")
         msg.CircuitCode.Code = circuitCode
@@ -97,13 +97,13 @@ class Simulator(EventTarget):
         
         # Don't break the whole script!
         try:
-            await self.fire("message", self, msg, name=msg.name)
+            await self.fire("Message", self, msg, name=msg.name)
         except Exception as e:
             traceback.print_exc()
     
     async def handleEvent(self, name, body):
         try:
-            await self.fire("event", self, name, body)
+            await self.fire("Event", self, name, body)
         except Exception as e:
             traceback.print_exc()
 
@@ -114,6 +114,21 @@ class Simulator(EventTarget):
         seed = Capabilities.get("Seed", url)
         self.capabilities = await seed.getCapabilities(Capabilities)
         self.eventQueue.start()
+
+    async def sendAcks(self):
+        if len(self.circuit.acks) == 0:
+            return False
+        
+        msg = self.messageTemplate.getMessage("PacketAck")
+        for i in range(255):
+            if len(self.circuit.acks) > 0:
+                msg.Packets[i].ID = self.circuit.acks.pop(0)
+            else:
+                break
+        
+        self.send(msg)
+        return len(self.circuit.acks) > 0
+        
 
     async def ping(self, timeout = 5.0, forceUsePingCheck = False):
         # If we already have a message within the timeout range,

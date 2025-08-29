@@ -36,8 +36,8 @@ class Agent(EventTarget):
             logger.debug(f"Setting parent simulator to {sim}")
             self.simulator = sim
         
-        sim.on("message", self.handleMessage)
-        sim.on("event", self.handleEvent)
+        sim.on("Message", self.handleMessage)
+        sim.on("Event", self.handleEvent)
         return sim
     
     def removeSimulator(self, simulator):
@@ -63,15 +63,15 @@ class Agent(EventTarget):
         elif msg.name == "LogoutReply":
             logger.debug(f"LogoutReply from {sim}")
             self.removeSimulator(sim)
-            await self.fire("logout")
+            await self.fire("Logout")
         
         elif msg.name == "KickUser":
             logger.debug(f"KickUser from {sim}")
             self.removeSimulator(sim)
-            await self.fire("kicked")
-            await self.fire("logout")
+            await self.fire("Kicked")
+            await self.fire("Logout")
         
-        await self.fire("message", sim, msg)
+        await self.fire("Message", sim, msg)
     
     async def handleEvent(self, sim, name, body):
         logger.debug(f"EventQueue \"{name}\" from {sim}")
@@ -131,7 +131,7 @@ class Agent(EventTarget):
             else:
                 logger.warning(f"Received EstablishAgentCommunication for unknown host {host}")
         
-        await self.fire("event", sim, name, body)
+        await self.fire("Event", sim, name, body)
     
     async def login(self, login):
         if login["login"] == "false":
@@ -171,11 +171,13 @@ class Agent(EventTarget):
                 for simulator in self.simulators:
                     if not await simulator.ping():
                         self.removeSimulator(simulator)
+                    else:
+                        await simulator.sendAcks()
                 
                 if not self.simulator:
                     break
 
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(1)
             
             except asyncio.exceptions.CancelledError as e:
                 # Attempt to gracefully logout

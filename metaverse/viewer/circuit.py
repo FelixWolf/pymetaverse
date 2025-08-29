@@ -32,17 +32,17 @@ class Circuit(asyncio.Protocol, EventTarget):
         if pkt.flags & pkt.FLAGS.ACK:
             self.acknowledge(pkt.acks)
         
-        asyncio.create_task(self.fire("message", addr, pkt.body))
+        asyncio.create_task(self.fire("Message", addr, pkt.body))
 
     def error_received(self, exc):
-        asyncio.create_task(self.fire("error", exc))
+        asyncio.create_task(self.fire("Error", exc))
 
     def connection_lost(self, exc):
         if not self.transport:
             return
         
         self.transport = None
-        asyncio.create_task(self.fire("close", exc))
+        asyncio.create_task(self.fire("Close", exc))
     
     def close(self):
         if not self.transport:
@@ -50,7 +50,7 @@ class Circuit(asyncio.Protocol, EventTarget):
         
         self.transport.close()
         self.transport = None
-        asyncio.create_task(self.fire("close", None))
+        asyncio.create_task(self.fire("Close", None))
     
     def send(self, message, reliable = False):
         if not self.transport:

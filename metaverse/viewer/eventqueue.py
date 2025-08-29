@@ -9,7 +9,7 @@ class EventQueue(EventTarget):
         self.task = None
     
     async def handleEvent(self, event):
-        await self.fire("event", event["message"], event["body"])
+        await self.fire("Event", event["message"], event["body"])
 
     async def run(self):
         while True:

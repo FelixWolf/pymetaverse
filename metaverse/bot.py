@@ -15,8 +15,8 @@ class SimpleBot(EventTarget):
     def __init__(self):
         super().__init__()
         self.agent = Viewer.Agent()
-        self.agent.on("message", self.handleMessage)
-        self.agent.on("event", self.handleEvent)
+        self.agent.on("Message", self.handleMessage)
+        self.agent.on("Event", self.handleEvent)
     
     async def handleSystemMessages(self, simulator, message):
         # We only really care about the parent simulator here
@@ -62,7 +62,7 @@ class SimpleBot(EventTarget):
             self.agentUpdate()
 
         elif message.name == "ImprovedInstantMessage":
-            await self.fire("instantmessage",
+            await self.fire("InstantMessage",
                 message.MessageBlock.ID,
                 message.AgentData.AgentID,
                 message.MessageBlock.FromAgentName.decode(),
@@ -79,7 +79,7 @@ class SimpleBot(EventTarget):
                 im = body["instantmessage"]["message_params"]
                 print("Accepting ChatterBoxInvitation from payload", body)
                 await sim.capabilities["ChatSessionRequest"].acceptInvitation(im["id"])
-                await self.fire("instantmessage",
+                await self.fire("InstantMessage",
                     im["id"],
                     im["from_id"],
                     im["from_name"],
@@ -100,11 +100,11 @@ class SimpleBot(EventTarget):
     
     async def handleEvent(self, sim, name, body):
         await self.handleSystemEvent(sim, name, body)
-        await self.fire("event", sim, name, body, name=name)
+        await self.fire("Event", sim, name, body, name=name)
 
     async def handleMessage(self, simulator, message):
         await self.handleSystemMessages(simulator, message)
-        await self.fire("message", simulator, message, name=message.name)
+        await self.fire("Message", simulator, message, name=message.name)
     
     def send(self, message, reliable = False):
         self.agent.send(message, reliable)

@@ -53,6 +53,9 @@ AGENT_CONTROL_LBUTTON_UP        = 0x20000000
 AGENT_CONTROL_ML_LBUTTON_DOWN   = 0x40000000
 AGENT_CONTROL_ML_LBUTTON_UP     = 0x80000000
 
+# llmessage/llinstantmessag.cpp
+IM_ONLINE = 0
+IM_OFFLINE = 1
 
 # llmessage/llinstantmessage.h
 

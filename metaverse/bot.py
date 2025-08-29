@@ -2,6 +2,7 @@ import asyncio
 import struct
 import math
 import random
+import datetime
 from .eventtarget import EventTarget
 from . import login
 from . import viewer as Viewer
@@ -15,6 +16,7 @@ class SimpleBot(EventTarget):
         super().__init__()
         self.agent = Viewer.Agent()
         self.agent.on("message", self.handleMessage)
+        self.agent.on("event", self.handleEvent)
     
     async def handleSystemMessages(self, simulator, message):
         # We only really care about the parent simulator here
@@ -58,6 +60,35 @@ class SimpleBot(EventTarget):
             self.send(msg)
 
             self.agentUpdate()
+
+        elif message.name == "ImprovedInstantMessage":
+            await self.fire("instantmessage",
+                message.MessageBlock.ID,
+                message.AgentData.AgentID,
+                message.MessageBlock.FromAgentName.decode(),
+                message.MessageBlock.Message.decode(),
+                message.MessageBlock.Offline == 1,
+                message.MessageBlock.BinaryBucket,
+                message.MessageBlock.Dialog,
+                datetime.datetime.fromtimestamp(message.MessageBlock.Timestamp)
+            )
+    
+    async def handleSystemEvent(self, sim, name, body):
+        if name == "ChatterBoxInvitation":
+            if "instantmessage" in body:
+                im = body["instantmessage"]["message_params"]
+                print("Accepting ChatterBoxInvitation from payload", body)
+                await sim.capabilities["ChatSessionRequest"].acceptInvitation(im["id"])
+                await self.fire("instantmessage",
+                    im["id"],
+                    im["from_id"],
+                    im["from_name"],
+                    im["message"],
+                    im["offline"] == 1,
+                    im["data"]["binary_bucket"],
+                    IM_SESSION_INVITE,
+                    datetime.datetime.fromtimestamp(im["timestamp"])
+                )
             
     @property
     def simulator(self):
@@ -67,6 +98,10 @@ class SimpleBot(EventTarget):
     def messageTemplate(self):
         return self.agent.messageTemplate
     
+    async def handleEvent(self, sim, name, body):
+        await self.handleSystemEvent(sim, name, body)
+        await self.fire("event", sim, name, body, name=name)
+
     async def handleMessage(self, simulator, message):
         await self.handleSystemMessages(simulator, message)
         await self.fire("message", simulator, message, name=message.name)

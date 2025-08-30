@@ -3,6 +3,7 @@ import struct
 import math
 import random
 import datetime
+import uuid
 from .eventtarget import EventTarget
 from . import login
 from . import viewer as Viewer
@@ -17,6 +18,7 @@ class SimpleBot(EventTarget):
         self.agent = Viewer.Agent()
         self.agent.on("Message", self.handleMessage)
         self.agent.on("Event", self.handleEvent)
+        self.lastAgentUpdate = None
     
     async def handleSystemMessages(self, simulator, message):
         # We only really care about the parent simulator here
@@ -60,6 +62,15 @@ class SimpleBot(EventTarget):
             self.send(msg)
 
             self.agentUpdate()
+            self.updateAnimations({
+                ANIM_AGENT_DO_NOT_DISTURB: False,
+                ANIM_AGENT_LAND: False,
+                ANIM_AGENT_STAND: True,
+                ANIM_AGENT_STAND_1: False,
+                ANIM_AGENT_STAND_2: False,
+                ANIM_AGENT_STAND_3: False,
+                ANIM_AGENT_STAND_4: False
+            })
 
         elif message.name == "ImprovedInstantMessage":
             await self.fire("InstantMessage",
@@ -72,7 +83,7 @@ class SimpleBot(EventTarget):
                 message.MessageBlock.Dialog,
                 datetime.datetime.fromtimestamp(message.MessageBlock.Timestamp)
             )
-    
+
     async def handleSystemEvent(self, sim, name, body):
         if name == "ChatterBoxInvitation":
             if "instantmessage" in body:
@@ -119,7 +130,22 @@ class SimpleBot(EventTarget):
         await self.agent.login(loginHandle)
     
     async def run(self):
-        await self.agent.run()
+        bot_tasks = asyncio.create_task(self._bot_tasks())
+        
+        try:
+            await self.agent.run()
+        finally:
+            bot_tasks.cancel()
+            try:
+                await bot_tasks
+            except asyncio.CancelledError:
+                pass
+
+    async def _bot_tasks(self):
+        while True:
+            await asyncio.sleep(1)
+            if self.lastAgentUpdate:
+                self.send(self.lastAgentUpdate)
     
     def logout(self):
         self.agent.logout()
@@ -160,6 +186,24 @@ class SimpleBot(EventTarget):
         msg.MessageBlock.BinaryBucket = binaryBucket or b""
         self.send(msg)
 
+    def updateAnimations(self, animations, eventList = None):
+        msg = self.messageTemplate.getMessage("AgentAnimation")
+        msg.AgentData.AgentID = self.agent.agentId
+        msg.AgentData.SessionID = self.agent.sessionId
+        for i, (animation, state) in enumerate(animations.items()):
+            if type(animation) != uuid.UUID:
+                animation = uuid.UUID(animation)
+            
+            msg.AnimationList[i].AnimID = animation
+            msg.AnimationList[i].StartAnim = state
+        
+        if eventList == None:
+            eventList = [b""]
+        
+        for i, v in enumerate(eventList):
+            msg.PhysicalAvatarEventList[i].TypeData = v
+        
+        self.send(msg)
     
     def agentUpdate(self, controls = 0, forward = 0, state = 0, flags = 0):
         angle_rad = math.radians(forward)
@@ -182,3 +226,4 @@ class SimpleBot(EventTarget):
         msg.AgentData.ControlFlags = controls
         msg.AgentData.Flags = flags
         self.send(msg)
+        self.lastAgentUpdate = msg

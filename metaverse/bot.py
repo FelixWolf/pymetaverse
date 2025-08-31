@@ -172,7 +172,7 @@ class SimpleBot(EventTarget):
             msg.Data.ButtonLabel = message.encode() + b"\0"
             self.send(msg)
     
-    def sendIM(self, destination, message = None, sessionId = None,
+    def sendIM(self, sessionId, destination, message = None,
                 dialog = IM_NOTHING_SPECIAL, binaryBucket = None):
         msg = self.messageTemplate.getMessage("ImprovedInstantMessage")
         msg.AgentData.AgentID = self.agent.agentId
@@ -180,9 +180,9 @@ class SimpleBot(EventTarget):
         msg.MessageBlock.ToAgentID = destination
         msg.MessageBlock.Offline = IM_ONLINE
         msg.MessageBlock.Dialog = dialog
-        msg.MessageBlock.ID = sessionId or destination
+        msg.MessageBlock.ID = sessionId
         msg.MessageBlock.FromAgentName = "{} {}".format(*self.agent.username).encode() + b"\0"
-        msg.MessageBlock.Message = ("" or message).encode() + b"\0"
+        msg.MessageBlock.Message = (message or "").encode() + b"\0"
         msg.MessageBlock.BinaryBucket = binaryBucket or b""
         self.send(msg)
 

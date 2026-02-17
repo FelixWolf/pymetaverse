@@ -29,10 +29,10 @@ jobs:
         python setup.py sdist bdist_wheel
     
     - name: Upload artifacts
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v4
       with:
         name: dist
-        path: dist/
+        path: dist/*
     
     # Not publishing to test just yet
     #- name: Publish a Python distribution to PyPI

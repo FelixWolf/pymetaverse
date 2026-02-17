@@ -1,4 +1,4 @@
-from setuptools import setup, find_namespace_packages
+from setuptools import setup, find_packages
 from metaverse import __version__ as version
 
 with open("README.md", "r", encoding="utf-8") as f:
@@ -13,11 +13,10 @@ setup(
     url="https://github.com/FelixWolf/pymetaverse",
     author="Félix",
     author_email="felix.wolfz@gmail.com",
-    packages=find_namespace_packages(),
-    include_package_data=True,
+    packages=find_packages(exclude=("build","examples")) + ["metaverse.viewer.message_template"],
     package_data={
-        "metaverse.viewer": [
-            "message_template/*",
+        "metaverse.viewer.message_template": [
+            "*.msg", "*.msg.sha1", "*.txt"
         ],
     },
     license="Zlib",
